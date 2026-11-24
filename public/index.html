@@ -1,0 +1,1138 @@
+<!DOCTYPE html>
+<html lang="es" class="dark h-full bg-slate-950">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SonicLab Cyberpunk v5.0 - Identificación Biométrica & Fourier Live Overlay</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        cyber: {
+                            black: '#030712',
+                            card: 'rgba(15, 23, 42, 0.85)',
+                            border: 'rgba(56, 189, 248, 0.25)',
+                            cyan: '#06b6d4',
+                            neon: '#22d3ee',
+                            pink: '#ec4899',
+                            purple: '#a855f7',
+                            amber: '#f59e0b',
+                            green: '#10b981',
+                            red: '#ef4444'
+                        }
+                    },
+                    fontFamily: {
+                        mono: ['JetBrains Mono', 'Fira Code', 'monospace']
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,300;0,500;0,700;1,400&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'JetBrains Mono', monospace;
+            background-color: #030712;
+            color: #f3f4f6;
+            background-image: 
+                radial-gradient(circle at 50% 0%, rgba(14, 165, 233, 0.12), transparent 50%),
+                radial-gradient(circle at 80% 80%, rgba(168, 85, 247, 0.08), transparent 40%);
+        }
+        .neon-glow-cyan { box-shadow: 0 0 15px rgba(34, 211, 238, 0.35); }
+        .neon-glow-pink { box-shadow: 0 0 15px rgba(236, 72, 153, 0.35); }
+        .neon-glow-red { box-shadow: 0 0 20px rgba(239, 68, 68, 0.5); }
+        .neon-glow-green { box-shadow: 0 0 20px rgba(16, 185, 129, 0.5); }
+        .cyber-border {
+            border: 1px solid rgba(56, 189, 248, 0.25);
+            backdrop-filter: blur(8px);
+        }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: rgba(15, 23, 42, 0.6); }
+        ::-webkit-scrollbar-thumb { background: rgba(56, 189, 248, 0.4); border-radius: 3px; }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col p-3 md:p-6 text-slate-200">
+
+    <!-- HEADER -->
+    <header class="w-full max-w-7xl mx-auto mb-6 p-4 rounded-xl cyber-border bg-slate-900/80 flex flex-wrap justify-between items-center gap-4">
+        <div class="flex items-center gap-3">
+            <div class="p-3 bg-cyan-500/10 border border-cyan-500/30 rounded-lg text-cyan-400">
+                <i class="fa-solid fa-microchip text-2xl animate-pulse"></i>
+            </div>
+            <div>
+                <h1 class="text-xl md:text-2xl font-bold tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-teal-300 to-pink-500">
+                    SONICLAB <span class="text-xs px-2 py-0.5 rounded bg-cyan-950 text-cyan-400 border border-cyan-500/30 ml-2">v5.0 LIVE IDENTIFIER 97.0%</span>
+                </h1>
+                <p class="text-xs text-slate-400">Identificación Biométrica en Tiempo Real & Espectro Fourier Superpuesto</p>
+            </div>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-3">
+            <button id="btn-audio-toggle" onclick="toggleAudioEngine()" class="px-4 py-2 rounded-lg bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 border border-cyan-500/50 font-medium text-xs md:text-sm flex items-center gap-2 transition duration-200 shadow-lg">
+                <i class="fa-solid fa-power-off text-cyan-400" id="icon-power"></i>
+                <span id="txt-power">INICIAR SISTEMA DE AUDIO</span>
+            </button>
+            <div class="px-3 py-1.5 rounded-lg bg-slate-950 border border-slate-800 text-xs flex items-center gap-2">
+                <span id="audio-status-dot" class="w-2.5 h-2.5 rounded-full bg-red-500"></span>
+                <span id="audio-status-text" class="text-slate-400 uppercase tracking-wider text-[10px]">Standby</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- MAIN DASHBOARD -->
+    <main class="w-full max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-6 flex-grow">
+
+        <!-- COLUMNA 1: CONTROL BIOMÉTRICO E IDENTIFICACIÓN EN TIEMPO REAL (4 COLS) -->
+        <section class="lg:col-span-4 flex flex-col gap-6">
+
+            <div class="p-5 rounded-xl cyber-border bg-slate-900/80 flex flex-col gap-4">
+                <div class="flex justify-between items-center border-b border-slate-800 pb-3">
+                    <h2 class="text-sm font-bold text-cyan-400 flex items-center gap-2">
+                        <i class="fa-solid fa-fingerprint text-pink-500"></i> IDENTIFICADOR ACTIVO
+                    </h2>
+                    <span class="text-[9px] px-2 py-0.5 bg-amber-950 text-amber-400 rounded border border-amber-800">UMBRAL: 97.0%</span>
+                </div>
+
+                <!-- HUD Status Card para identificación instantánea -->
+                <div id="auth-status-card" class="p-4 rounded-xl border bg-slate-950/80 border-slate-800 flex flex-col items-center justify-center text-center gap-2 min-h-[120px] transition-all duration-300">
+                    <div id="auth-icon" class="text-3xl text-slate-600">
+                        <i class="fa-solid fa-user-check"></i>
+                    </div>
+                    <div>
+                        <div id="auth-title" class="text-xs font-bold text-slate-300 tracking-wide">MONITOREANDO MICRÓFONO...</div>
+                        <div id="auth-subtitle" class="text-[10px] text-slate-500 mt-1">Hable al micrófono para comparar contra el perfil activo</div>
+                    </div>
+                    
+                    <!-- Barra de Similitud e Identificación Live -->
+                    <div class="w-full bg-slate-900 rounded-full h-3 mt-1 overflow-hidden border border-slate-800 relative">
+                        <div id="match-bar-fill" class="bg-gradient-to-r from-red-500 via-amber-400 to-emerald-400 h-full w-0 transition-all duration-150"></div>
+                        <div class="absolute top-0 bottom-0 left-[97%] w-0.5 bg-pink-500 z-10" title="Umbral 97%"></div>
+                    </div>
+                    <div class="w-full flex justify-between text-[9px] font-mono mt-0.5">
+                        <span class="text-slate-400">Match Live: <span id="live-sim-score" class="text-cyan-400 font-bold">0.0%</span></span>
+                        <span id="live-auth-badge" class="px-1.5 py-0.5 rounded bg-slate-900 text-slate-500 border border-slate-800">NO AUTORIZADO</span>
+                    </div>
+                </div>
+
+                <!-- Selector de Perfil de Referencia para comparación continua -->
+                <div class="flex flex-col gap-1.5 text-xs">
+                    <label class="text-[10px] text-cyan-400 font-bold uppercase">Perfil de Usuario Objetivo (Cyan):</label>
+                    <select id="select-target-profile" onchange="changeTargetProfile(this.value)" class="w-full bg-slate-950 border border-cyan-500/40 rounded p-2 text-slate-200 text-xs focus:outline-none">
+                        <option value="">-- Seleccionar Perfil Guardado --</option>
+                    </select>
+                </div>
+
+                <div class="grid grid-cols-2 gap-2">
+                    <button id="btn-open-register" onclick="toggleRegisterModal(true)" class="col-span-2 p-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs flex items-center justify-center gap-2 border border-slate-700 transition">
+                        <i class="fa-solid fa-user-plus text-base text-pink-400"></i>
+                        <span>REGISTRAR NUEVO PERFIL</span>
+                    </button>
+                </div>
+
+                <!-- Telemetría Numérica Completa -->
+                <div class="p-3 rounded-lg bg-slate-950/60 border border-slate-800/80 text-[10px] font-mono flex flex-col gap-1.5">
+                    <div class="flex justify-between text-slate-400 border-b border-slate-800/50 pb-1">
+                        <span>PARÁMETROS MICRÓFONO (LIVE)</span>
+                        <span id="spectral-status" class="text-cyan-400">STANDBY</span>
+                    </div>
+                    <div class="grid grid-cols-2 gap-x-2 gap-y-1 text-slate-300 text-[10px]">
+                        <div>Centroide: <span id="val-centroid" class="text-cyan-300">0 Hz</span></div>
+                        <div>Tono (f₀): <span id="val-pitch-now" class="text-emerald-400">0 Hz</span></div>
+                        <div>Rolloff: <span id="val-rolloff" class="text-cyan-300">0 Hz</span></div>
+                        <div>Flatness: <span id="val-flatness" class="text-cyan-300">0.0000</span></div>
+                        <div class="col-span-2 text-slate-400 border-t border-slate-800/40 pt-1">Formantes Live (F1-F8):</div>
+                        <div class="col-span-2 text-pink-400 text-[9px] break-all font-mono" id="val-formants">0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Base de Datos de Usuarios en IndexedDB -->
+            <div class="p-5 rounded-xl cyber-border bg-slate-900/80 flex flex-col gap-4 flex-grow">
+                <div class="flex justify-between items-center border-b border-slate-800 pb-3">
+                    <h2 class="text-xs font-bold text-slate-200 flex items-center gap-2">
+                        <i class="fa-solid fa-database text-cyan-400"></i> BASE DE DATOS LOCAL
+                    </h2>
+                    <span id="user-count-badge" class="text-[10px] px-2 py-0.5 rounded bg-cyan-950 text-cyan-300 border border-cyan-800">0 Perfiles</span>
+                </div>
+
+                <div id="users-list" class="flex flex-col gap-2 max-h-[280px] overflow-y-auto pr-1">
+                    <div class="text-center py-6 text-slate-500 text-xs italic">
+                        No hay perfiles registrados en IndexedDB.
+                    </div>
+                </div>
+            </div>
+
+        </section>
+
+        <!-- COLUMNA 2: CANVAS COMPARATIVO SUPERPUESTO EN TIEMPO REAL (4 COLS) -->
+        <section class="lg:col-span-4 flex flex-col gap-6">
+
+            <div class="p-5 rounded-xl cyber-border bg-slate-900/80 flex flex-col gap-4 h-full">
+                <div class="flex justify-between items-center border-b border-slate-800 pb-3">
+                    <h2 class="text-sm font-bold text-pink-400 flex items-center gap-2">
+                        <i class="fa-solid fa-layer-group"></i> ESPECTRO SUPERPUESTO A vs B
+                    </h2>
+                    <span id="overlay-status-tag" class="text-[9px] px-2 py-0.5 bg-slate-950 text-cyan-400 border border-slate-800 rounded">EN DIRECTO</span>
+                </div>
+
+                <!-- Canvas de Comparación en Tiempo Real (Mic vs Autorizado) -->
+                <div class="relative bg-slate-950 rounded-lg p-2 border border-slate-800 flex-grow min-h-[280px] flex flex-col">
+                    <div class="absolute top-3 left-3 text-[9px] bg-slate-900/90 px-2 py-1 rounded text-slate-300 border border-slate-700 font-bold z-10 flex flex-col gap-1 shadow">
+                        <span class="text-cyan-400 flex items-center gap-1"><i class="fa-solid fa-minus"></i> Perfil Objetivo (Cyan)</span>
+                        <span class="text-pink-400 flex items-center gap-1"><i class="fa-solid fa-minus"></i> Micrófono Live (Magenta)</span>
+                        <span class="text-emerald-400 flex items-center gap-1"><i class="fa-solid fa-square"></i> Coincidencia Espectral</span>
+                    </div>
+                    <canvas id="canvas-overlay-live" class="w-full h-full rounded bg-slate-950 flex-grow"></canvas>
+                </div>
+
+                <!-- Tabla Diferencial en Vivo -->
+                <div class="p-3 bg-slate-950 rounded-lg border border-slate-800 text-[10px] font-mono flex flex-col gap-1.5">
+                    <div class="text-slate-400 text-[9px] border-b border-slate-800 pb-1 flex justify-between">
+                        <span>DESGLOSE COMPARATIVO EN VIVO</span>
+                        <span id="diff-delta-sum" class="text-amber-400">Δ Formantes: 0.00</span>
+                    </div>
+                    <div class="grid grid-cols-2 gap-2 text-[9px] text-slate-300">
+                        <div>Centroide Ref: <span id="comp-cent-target" class="text-cyan-400">0 Hz</span></div>
+                        <div>Centroide Mic: <span id="comp-cent-mic" class="text-pink-400">0 Hz</span></div>
+                        <div>Tono Ref ($f_0$): <span id="comp-pitch-target" class="text-cyan-400">0 Hz</span></div>
+                        <div>Tono Mic ($f_0$): <span id="comp-pitch-mic" class="text-pink-400">0 Hz</span></div>
+                    </div>
+                </div>
+            </div>
+
+        </section>
+
+        <!-- COLUMNA 3: OSCILOSCOPIO, FFT EN TIEMPO REAL Y DIAGRAMAS (4 COLS) -->
+        <section class="lg:col-span-4 flex flex-col gap-6">
+
+            <div class="p-5 rounded-xl cyber-border bg-slate-900/80 flex flex-col gap-4">
+                <div class="flex justify-between items-center border-b border-slate-800 pb-3">
+                    <h2 class="text-xs font-bold text-cyan-400 flex items-center gap-2">
+                        <i class="fa-solid fa-wave-square text-cyan-300"></i> OSCILOSCOPIO & FFT LIVE
+                    </h2>
+                    <select id="sel-fft-size" onchange="changeFFTSize(this.value)" class="bg-slate-950 border border-slate-800 text-[10px] text-cyan-300 rounded px-1.5 py-0.5 focus:outline-none">
+                        <option value="1024">FFT: 1024</option>
+                        <option value="2048" selected>FFT: 2048</option>
+                        <option value="4096">FFT: 4096</option>
+                    </select>
+                </div>
+
+                <div class="grid grid-cols-1 gap-3">
+                    <!-- Osciloscopio v(t) -->
+                    <div class="relative bg-slate-950 rounded-lg p-1.5 border border-slate-800">
+                        <div class="absolute top-2 left-2 text-[9px] bg-slate-900/80 px-1.5 py-0.5 rounded text-cyan-400 border border-cyan-500/20 font-bold z-10">
+                            SEÑAL v(t) [Tiempo]
+                        </div>
+                        <canvas id="canvas-waveform" class="w-full h-24 rounded bg-slate-950"></canvas>
+                    </div>
+
+                    <!-- Espectro FFT -->
+                    <div class="relative bg-slate-950 rounded-lg p-1.5 border border-slate-800">
+                        <div class="absolute top-2 left-2 text-[9px] bg-slate-900/80 px-1.5 py-0.5 rounded text-pink-400 border border-pink-500/20 font-bold z-10">
+                            ESPECTRO FFT [Frecuencia]
+                        </div>
+                        <canvas id="canvas-fft" class="w-full h-24 rounded bg-slate-950"></canvas>
+                    </div>
+
+                    <!-- Gráfica Contorno de Tono f0 -->
+                    <div class="relative bg-slate-950 rounded-lg p-1.5 border border-slate-800">
+                        <div class="absolute top-2 left-2 text-[9px] bg-slate-900/80 px-1.5 py-0.5 rounded text-emerald-400 border border-emerald-500/20 font-bold z-10">
+                            HISTÓRICO TONO $f_0$ (Hz)
+                        </div>
+                        <canvas id="canvas-pitch-history" class="w-full h-20 rounded bg-slate-950"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 gap-4">
+                <!-- Whiteboard Envelope -->
+                <div class="p-4 rounded-xl cyber-border bg-slate-900/80 flex flex-col gap-2">
+                    <div class="flex justify-between items-center border-b border-slate-800 pb-1.5">
+                        <h3 class="text-xs font-bold text-amber-400 flex items-center gap-1.5">
+                            <i class="fa-solid fa-chalkboard"></i> WHITEBOARD FOURIER
+                        </h3>
+                    </div>
+                    <div class="bg-slate-950 rounded-lg p-1 border border-slate-800">
+                        <canvas id="canvas-whiteboard" class="w-full h-24 rounded bg-slate-950"></canvas>
+                    </div>
+                </div>
+
+                <!-- Tuner & Vumetro -->
+                <div class="p-4 rounded-xl cyber-border bg-slate-900/80 flex flex-col gap-3">
+                    <div class="flex justify-between items-center border-b border-slate-800 pb-1.5">
+                        <h3 class="text-xs font-bold text-emerald-400 flex items-center gap-1.5">
+                            <i class="fa-solid fa-sliders"></i> AFINADOR & VUMETRO
+                        </h3>
+                    </div>
+
+                    <div class="flex items-center justify-between p-2.5 bg-slate-950 rounded-lg border border-slate-800 text-xs">
+                        <div>
+                            <div class="text-[9px] text-slate-400 uppercase">Nota Pitch</div>
+                            <div id="tuner-note" class="text-lg font-bold text-cyan-400">--</div>
+                        </div>
+                        <div class="text-right">
+                            <div class="text-[9px] text-slate-400 uppercase">Frecuencia</div>
+                            <div id="tuner-freq" class="text-base font-mono text-emerald-400">0.0 Hz</div>
+                        </div>
+                    </div>
+
+                    <div class="flex flex-col gap-1 p-2.5 bg-slate-950 rounded-lg border border-slate-800 text-xs">
+                        <div class="flex justify-between text-[9px] text-slate-400">
+                            <span>VU AMPLITUD</span>
+                            <span id="vu-db-text" class="text-cyan-400">-inf dB</span>
+                        </div>
+                        <div class="w-full bg-slate-900 h-2.5 rounded-full overflow-hidden flex p-0.5 border border-slate-800">
+                            <div id="vu-bar" class="bg-gradient-to-r from-teal-500 via-amber-400 to-red-500 h-full w-0 transition-all duration-75 rounded-full"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </section>
+    </main>
+
+    <!-- MODAL DE REGISTRO DE PERFIL VOCAL -->
+    <div id="modal-register" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 z-50 hidden">
+        <div class="w-full max-w-md bg-slate-900 border border-cyan-500/40 rounded-xl p-6 shadow-2xl flex flex-col gap-5 relative">
+            <button onclick="toggleRegisterModal(false)" class="absolute top-4 right-4 text-slate-400 hover:text-slate-100">
+                <i class="fa-solid fa-xmark text-lg"></i>
+            </button>
+
+            <div class="border-b border-slate-800 pb-3">
+                <h3 class="text-lg font-bold text-cyan-400 flex items-center gap-2">
+                    <i class="fa-solid fa-microphone-lines"></i> REGISTRAR NUEVA VOZ
+                </h3>
+                <p class="text-xs text-slate-400">Grabe 3 segundos de muestra hablada para crear la firma espectral.</p>
+            </div>
+
+            <div class="flex flex-col gap-4">
+                <div>
+                    <label class="block text-xs font-medium text-slate-300 mb-1">Nombre de Usuario:</label>
+                    <input type="text" id="input-username" placeholder="Ej: Operador 01" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-sm text-cyan-300 focus:outline-none">
+                </div>
+
+                <div class="p-4 bg-slate-950 border border-slate-800 rounded-xl flex flex-col items-center gap-3">
+                    <div id="rec-status-text" class="text-xs font-semibold text-slate-400">LISTO PARA GRABAR</div>
+                    <div class="relative flex items-center justify-center w-20 h-20">
+                        <svg class="w-full h-full transform -rotate-90">
+                            <circle cx="40" cy="40" r="34" stroke="currentColor" stroke-width="4" class="text-slate-800" fill="transparent"/>
+                            <circle id="rec-progress-circle" cx="40" cy="40" r="34" stroke="currentColor" stroke-width="4" stroke-dasharray="213.6" stroke-dashoffset="213.6" class="text-pink-500 transition-all duration-100" fill="transparent"/>
+                        </svg>
+                        <i id="rec-icon" class="fa-solid fa-microphone text-2xl text-slate-600 absolute"></i>
+                    </div>
+                    <audio id="rec-audio-preview" controls class="w-full h-8 mt-1 hidden"></audio>
+                </div>
+
+                <div class="flex gap-3">
+                    <button id="btn-start-record" onclick="startVoiceRegistrationRecording()" class="flex-1 py-2.5 rounded-lg bg-pink-600 hover:bg-pink-500 text-white font-bold text-xs flex items-center justify-center gap-2 border border-pink-400/30 transition">
+                        <i class="fa-solid fa-circle"></i> GRABAR MUESTRA
+                    </button>
+                    <button id="btn-save-profile" onclick="saveVoiceProfile()" disabled class="flex-1 py-2.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 disabled:bg-slate-800 disabled:text-slate-600 text-white font-bold text-xs flex items-center justify-center gap-2 border border-emerald-400/30 transition">
+                        <i class="fa-solid fa-floppy-disk"></i> GUARDAR EN DB
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- JAVASCRIPT LOGIC ARCHITECTURE -->
+    <script>
+        const STRICT_THRESHOLD = 0.97;
+        const DB_NAME = 'SonicLab_LiveCompare_DB';
+        const DB_VERSION = 1;
+        const STORE_USERS = 'user_profiles';
+        let dbInstance = null;
+
+        let audioCtx = null;
+        let micStream = null;
+        let analyserNode = null;
+        let isAudioEngineRunning = false;
+        let fftSize = 2048;
+
+        let canvasWaveform, ctxWaveform;
+        let canvasFFT, ctxFFT;
+        let canvasPitchHistory, ctxPitchHistory;
+        let canvasWhiteboard, ctxWhiteboard;
+        let canvasOverlayLive, ctxOverlayLive;
+
+        let pitchHistoryBuffer = new Array(150).fill(0);
+
+        // Target profile for live comparison
+        let targetUserProfile = null;
+
+        let mediaRecorder = null;
+        let recordedAudioChunks = [];
+        let currentRecordedBlob = null;
+        let currentRecordedVector = null;
+
+        function initDatabase() {
+            return new Promise((resolve, reject) => {
+                const request = indexedDB.open(DB_NAME, DB_VERSION);
+                request.onupgradeneeded = (e) => {
+                    const db = e.target.result;
+                    if (!db.objectStoreNames.contains(STORE_USERS)) {
+                        db.createObjectStore(STORE_USERS, { keyPath: 'id' });
+                    }
+                };
+                request.onsuccess = (e) => {
+                    dbInstance = e.target.result;
+                    loadRegisteredUsers();
+                    resolve(dbInstance);
+                };
+                request.onerror = (e) => reject(e.target.error);
+            });
+        }
+
+        function saveProfileToDB(profile) {
+            return new Promise((resolve, reject) => {
+                const tx = dbInstance.transaction(STORE_USERS, 'readwrite');
+                const store = tx.objectStore(STORE_USERS);
+                const req = store.put(profile);
+                req.onsuccess = () => resolve();
+                req.onerror = () => reject(req.error);
+            });
+        }
+
+        function getAllProfilesFromDB() {
+            return new Promise((resolve, reject) => {
+                const tx = dbInstance.transaction(STORE_USERS, 'readonly');
+                const store = tx.objectStore(STORE_USERS);
+                const req = store.getAll();
+                req.onsuccess = () => resolve(req.result || []);
+                req.onerror = () => reject(req.error);
+            });
+        }
+
+        function deleteProfileFromDB(id) {
+            return new Promise((resolve, reject) => {
+                const tx = dbInstance.transaction(STORE_USERS, 'readwrite');
+                const store = tx.objectStore(STORE_USERS);
+                const req = store.delete(id);
+                req.onsuccess = () => { loadRegisteredUsers(); resolve(); };
+                req.onerror = () => reject(req.error);
+            });
+        }
+
+        async function toggleAudioEngine() {
+            if (!isAudioEngineRunning) {
+                try {
+                    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                    micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                    const sourceNode = audioCtx.createMediaStreamSource(micStream);
+                    analyserNode = audioCtx.createAnalyser();
+                    analyserNode.fftSize = fftSize;
+                    analyserNode.smoothingTimeConstant = 0.8;
+                    sourceNode.connect(analyserNode);
+
+                    isAudioEngineRunning = true;
+                    updateAudioUIState(true);
+                    startMainRenderLoop();
+                } catch (err) {
+                    alert('Error al acceder al micrófono: ' + err.message);
+                }
+            } else {
+                if (audioCtx) audioCtx.close();
+                if (micStream) micStream.getTracks().forEach(t => t.stop());
+                isAudioEngineRunning = false;
+                updateAudioUIState(false);
+            }
+        }
+
+        function updateAudioUIState(active) {
+            const btn = document.getElementById('btn-audio-toggle');
+            const icon = document.getElementById('icon-power');
+            const txt = document.getElementById('txt-power');
+            const dot = document.getElementById('audio-status-dot');
+            const statusTxt = document.getElementById('audio-status-text');
+
+            if (active) {
+                btn.classList.replace('bg-cyan-500/20', 'bg-red-500/20');
+                icon.className = 'fa-solid fa-power-off text-red-400';
+                txt.textContent = 'DETENER AUDIO';
+                dot.className = 'w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse';
+                statusTxt.textContent = 'ACTIVO';
+                statusTxt.className = 'text-emerald-400 uppercase tracking-wider text-[10px]';
+            } else {
+                btn.classList.replace('bg-red-500/20', 'bg-cyan-500/20');
+                icon.className = 'fa-solid fa-power-off text-cyan-400';
+                txt.textContent = 'INICIAR SISTEMA DE AUDIO';
+                dot.className = 'w-2.5 h-2.5 rounded-full bg-red-500';
+                statusTxt.textContent = 'Standby';
+                statusTxt.className = 'text-slate-400 uppercase tracking-wider text-[10px]';
+            }
+        }
+
+        function changeFFTSize(val) {
+            fftSize = parseInt(val);
+            if (analyserNode) analyserNode.fftSize = fftSize;
+        }
+
+        function extractSpectralVector(freqBuffer, timeBuffer, sampleRate = 44100) {
+            const bufferLen = freqBuffer.length;
+            const nyquist = sampleRate / 2;
+            const binWidth = nyquist / bufferLen;
+
+            let totalEnergy = 0, weightedSum = 0, logSum = 0, cumulativeEnergy = 0, rolloff = 0;
+            for (let i = 0; i < bufferLen; i++) {
+                const amp = freqBuffer[i];
+                totalEnergy += amp;
+                weightedSum += amp * (i * binWidth);
+                logSum += Math.log(amp + 0.00001);
+            }
+
+            const targetEnergy = totalEnergy * 0.85;
+            for (let i = 0; i < bufferLen; i++) {
+                cumulativeEnergy += freqBuffer[i];
+                if (cumulativeEnergy >= targetEnergy) {
+                    rolloff = i * binWidth;
+                    break;
+                }
+            }
+
+            const pitch = autoCorrelatePitch(timeBuffer, sampleRate);
+            if (totalEnergy === 0) return { centroid: 0, pitch: 0, rolloff: 0, flatness: 0, formants: [0, 0, 0, 0, 0, 0, 0, 0], fftRaw: Array.from(freqBuffer) };
+
+            const centroid = weightedSum / totalEnergy;
+            const arithmeticMean = totalEnergy / bufferLen;
+            const geometricMean = Math.exp(logSum / bufferLen);
+            const flatness = arithmeticMean > 0 ? (geometricMean / arithmeticMean) : 0;
+
+            const bandLimits = [100, 300, 700, 1400, 2500, 4000, 6000, 10000];
+            const bandEnergy = new Array(8).fill(0);
+            for (let i = 0; i < bufferLen; i++) {
+                const freq = i * binWidth;
+                const amp = freqBuffer[i];
+                for (let b = 0; b < 8; b++) {
+                    const low = b === 0 ? 0 : bandLimits[b - 1];
+                    const high = bandLimits[b];
+                    if (freq >= low && freq < high) { bandEnergy[b] += amp; break; }
+                }
+            }
+
+            const sumBand = bandEnergy.reduce((a, b) => a + b, 0) || 1;
+            return {
+                centroid: Math.round(centroid),
+                pitch: pitch > 0 ? Math.round(pitch) : 0,
+                rolloff: Math.round(rolloff),
+                flatness: parseFloat(flatness.toFixed(4)),
+                formants: bandEnergy.map(v => v / sumBand),
+                fftRaw: Array.from(freqBuffer)
+            };
+        }
+
+        function calculateVectorSimilarity(vecA, vecB) {
+            if (!vecA || !vecB) return 0;
+            const normA = [...vecA.formants, vecA.centroid / 8000, (vecA.pitch || 100) / 1000, (vecA.rolloff || 1000) / 12000];
+            const normB = [...vecB.formants, vecB.centroid / 8000, (vecB.pitch || 100) / 1000, (vecB.rolloff || 1000) / 12000];
+
+            let dotProduct = 0, normSqA = 0, normSqB = 0;
+            for (let i = 0; i < normA.length; i++) {
+                dotProduct += normA[i] * normB[i];
+                normSqA += normA[i] * normA[i];
+                normSqB += normB[i] * normB[i];
+            }
+            if (normSqA === 0 || normSqB === 0) return 0;
+            return dotProduct / (Math.sqrt(normSqA) * Math.sqrt(normSqB));
+        }
+
+        async function changeTargetProfile(profileId) {
+            if (!profileId) {
+                targetUserProfile = null;
+                return;
+            }
+            const users = await getAllProfilesFromDB();
+            targetUserProfile = users.find(u => u.id === profileId) || null;
+            if (targetUserProfile && !targetUserProfile.vector.fftRaw) {
+                targetUserProfile.vector.fftRaw = generateSimulatedFFTFromFormants(targetUserProfile.vector.formants);
+            }
+        }
+
+        function generateSimulatedFFTFromFormants(formants) {
+            const fft = new Array(512).fill(0);
+            for (let i = 0; i < fft.length; i++) {
+                const bandIdx = Math.min(7, Math.floor((i / fft.length) * 8));
+                fft[i] = Math.round((formants[bandIdx] || 0.1) * 255 * (1 - (i / fft.length) * 0.3));
+            }
+            return fft;
+        }
+
+        function startMainRenderLoop() {
+            function draw() {
+                if (!isAudioEngineRunning) return;
+                requestAnimationFrame(draw);
+
+                const bufferLen = analyserNode.frequencyBinCount;
+                const timeBuffer = new Uint8Array(bufferLen);
+                const freqBuffer = new Uint8Array(bufferLen);
+
+                analyserNode.getByteTimeDomainData(timeBuffer);
+                analyserNode.getByteFrequencyData(freqBuffer);
+
+                const liveVector = extractSpectralVector(freqBuffer, timeBuffer, audioCtx.sampleRate);
+
+                // Update Telemetry UI
+                document.getElementById('val-centroid').textContent = `${liveVector.centroid} Hz`;
+                document.getElementById('val-pitch-now').textContent = `${liveVector.pitch} Hz`;
+                document.getElementById('val-rolloff').textContent = `${liveVector.rolloff} Hz`;
+                document.getElementById('val-flatness').textContent = liveVector.flatness.toFixed(4);
+                document.getElementById('val-formants').textContent = liveVector.formants.map(n => n.toFixed(2)).join(', ');
+
+                // Standard Canvases
+                renderWaveform(timeBuffer);
+                renderFFTSpectrum(freqBuffer);
+                renderPitchHistoryCanvas(liveVector.pitch);
+                renderFourierWhiteboard(freqBuffer);
+                updatePitchAndVUMeter(timeBuffer, liveVector.pitch);
+
+                // REAL-TIME OVERLAY & BIOMETRIC IDENTIFICATION
+                renderLiveOverlayFourierCanvas(freqBuffer, liveVector);
+            }
+            draw();
+        }
+
+        function renderLiveOverlayFourierCanvas(liveFFTBuffer, liveVector) {
+            const w = canvasOverlayLive.width, h = canvasOverlayLive.height;
+            const padL = 38, padB = 22, padT = 25, padR = 15;
+            const graphW = w - padL - padR, graphH = h - padT - padB;
+
+            ctxOverlayLive.fillStyle = '#030712';
+            ctxOverlayLive.fillRect(0, 0, w, h);
+
+            // Y Axis (dB)
+            ctxOverlayLive.fillStyle = '#64748b';
+            ctxOverlayLive.font = '9px monospace';
+            ctxOverlayLive.textAlign = 'right';
+            ['0dB', '-20dB', '-40dB', '-60dB', '-80dB'].forEach((lbl, idx) => {
+                const y = padT + (idx / 4) * graphH;
+                ctxOverlayLive.fillText(lbl, padL - 4, y + 3);
+                ctxOverlayLive.strokeStyle = 'rgba(255, 255, 255, 0.05)';
+                ctxOverlayLive.beginPath(); ctxOverlayLive.moveTo(padL, y); ctxOverlayLive.lineTo(padL + graphW, y); ctxOverlayLive.stroke();
+            });
+
+            // X Axis (Hz)
+            ctxOverlayLive.textAlign = 'center';
+            ['0Hz', '2kHz', '5kHz', '10kHz', '15kHz', '22kHz'].forEach((lbl, idx) => {
+                const x = padL + (idx / 5) * graphW;
+                ctxOverlayLive.fillText(lbl, x, padT + graphH + 14);
+            });
+
+            // Axes lines
+            ctxOverlayLive.strokeStyle = 'rgba(56, 189, 248, 0.3)';
+            ctxOverlayLive.beginPath();
+            ctxOverlayLive.moveTo(padL, padT); ctxOverlayLive.lineTo(padL, padT + graphH); ctxOverlayLive.lineTo(padL + graphW, padT + graphH);
+            ctxOverlayLive.stroke();
+
+            const targetFFT = targetUserProfile ? (targetUserProfile.vector.fftRaw || generateSimulatedFFTFromFormants(targetUserProfile.vector.formants)) : null;
+
+            // DRAW SHADED MATCHING REGION IN TRANSLUCENT GREEN
+            if (targetFFT && liveFFTBuffer) {
+                ctxOverlayLive.fillStyle = 'rgba(16, 185, 129, 0.18)';
+                ctxOverlayLive.beginPath();
+                const step = graphW / Math.min(targetFFT.length, liveFFTBuffer.length);
+
+                for (let i = 0; i < Math.min(targetFFT.length, liveFFTBuffer.length); i++) {
+                    const valTarget = targetFFT[i] / 255;
+                    const valLive = liveFFTBuffer[i] / 255;
+                    const minVal = Math.min(valTarget, valLive);
+
+                    const x = padL + i * step;
+                    const y = padT + graphH - (minVal * graphH);
+
+                    if (i === 0) ctxOverlayLive.moveTo(x, padT + graphH);
+                    ctxOverlayLive.lineTo(x, y);
+                }
+                ctxOverlayLive.lineTo(padL + graphW, padT + graphH);
+                ctxOverlayLive.closePath();
+                ctxOverlayLive.fill();
+            }
+
+            // DRAW TARGET PROFILE (CYAN)
+            if (targetFFT) {
+                drawFFTCurveOnCanvas(ctxOverlayLive, targetFFT, '#22d3ee', padL, padT, graphW, graphH);
+            }
+
+            // DRAW LIVE MIC SIGNAL (MAGENTA)
+            if (liveFFTBuffer) {
+                drawFFTCurveOnCanvas(ctxOverlayLive, liveFFTBuffer, '#ec4899', padL, padT, graphW, graphH);
+            }
+
+            // UPDATE REAL-TIME SIMILARITY & IDENTIFICATION STATUS
+            if (targetUserProfile) {
+                const sim = calculateVectorSimilarity(liveVector, targetUserProfile.vector);
+                const simPct = (sim * 100).toFixed(1);
+
+                document.getElementById('live-sim-score').textContent = `${simPct}%`;
+                document.getElementById('match-bar-fill').style.width = `${Math.min(100, simPct)}%`;
+
+                document.getElementById('comp-cent-target').textContent = `${targetUserProfile.vector.centroid} Hz`;
+                document.getElementById('comp-cent-mic').textContent = `${liveVector.centroid} Hz`;
+                document.getElementById('comp-pitch-target').textContent = `${targetUserProfile.vector.pitch} Hz`;
+                document.getElementById('comp-pitch-mic').textContent = `${liveVector.pitch} Hz`;
+
+                let formantsDelta = 0;
+                for (let i = 0; i < 8; i++) formantsDelta += Math.abs((liveVector.formants[i] || 0) - (targetUserProfile.vector.formants[i] || 0));
+                document.getElementById('diff-delta-sum').textContent = `Δ Formantes: ${(formantsDelta).toFixed(2)}`;
+
+                const card = document.getElementById('auth-status-card');
+                const title = document.getElementById('auth-title');
+                const subtitle = document.getElementById('auth-subtitle');
+                const icon = document.getElementById('auth-icon');
+                const badge = document.getElementById('live-auth-badge');
+
+                if (sim >= STRICT_THRESHOLD) {
+                    card.className = 'p-4 rounded-xl border bg-slate-950/90 border-emerald-500 flex flex-col items-center justify-center text-center gap-2 min-h-[120px] neon-glow-green';
+                    title.textContent = `¡AUTENTICADO: ${targetUserProfile.name.toUpperCase()}!`;
+                    title.className = 'text-xs font-bold text-emerald-400';
+                    subtitle.textContent = `Coincidencia biométrica del ${simPct}% (Excede 97.0%)`;
+                    icon.className = 'text-3xl text-emerald-400';
+                    icon.innerHTML = `<i class="fa-solid fa-user-check"></i>`;
+
+                    badge.className = 'px-1.5 py-0.5 rounded bg-emerald-950 text-emerald-300 border border-emerald-800 font-bold';
+                    badge.textContent = 'AUTENTICADO';
+                } else {
+                    card.className = 'p-4 rounded-xl border bg-slate-950/80 border-slate-800 flex flex-col items-center justify-center text-center gap-2 min-h-[120px]';
+                    title.textContent = `EVALUANDO MICRÓFONO... (${simPct}%)`;
+                    title.className = 'text-xs font-bold text-slate-300';
+                    subtitle.textContent = `Comparando contra ${targetUserProfile.name} (Umbral: 97.0%)`;
+                    icon.className = 'text-3xl text-slate-500';
+                    icon.innerHTML = `<i class="fa-solid fa-user-secret"></i>`;
+
+                    badge.className = 'px-1.5 py-0.5 rounded bg-red-950 text-red-400 border border-red-800 font-bold';
+                    badge.textContent = 'NO AUTORIZADO';
+                }
+            }
+        }
+
+        function drawFFTCurveOnCanvas(ctx, fftBuffer, colorHex, padL, padT, graphW, graphH) {
+            ctx.strokeStyle = colorHex;
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            const step = graphW / fftBuffer.length;
+
+            for (let i = 0; i < fftBuffer.length; i++) {
+                const val = fftBuffer[i] / 255;
+                const x = padL + i * step;
+                const y = padT + graphH - (val * graphH);
+
+                if (i === 0) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
+            }
+            ctx.stroke();
+        }
+
+        function renderWaveform(data) {
+            const w = canvasWaveform.width, h = canvasWaveform.height;
+            const padL = 30, padB = 18, padT = 20, padR = 10;
+            const graphW = w - padL - padR, graphH = h - padT - padB;
+
+            ctxWaveform.fillStyle = '#030712';
+            ctxWaveform.fillRect(0, 0, w, h);
+
+            ctxWaveform.strokeStyle = 'rgba(56, 189, 248, 0.3)';
+            ctxWaveform.lineWidth = 1;
+            ctxWaveform.beginPath();
+            ctxWaveform.moveTo(padL, padT); ctxWaveform.lineTo(padL, padT + graphH); ctxWaveform.lineTo(padL + graphW, padT + graphH);
+            ctxWaveform.stroke();
+
+            ctxWaveform.fillStyle = '#64748b';
+            ctxWaveform.font = '8px monospace';
+            ctxWaveform.textAlign = 'right';
+            ['+1.0', '0.0', '-1.0'].forEach((lbl, idx) => {
+                const y = padT + (idx / 2) * graphH;
+                ctxWaveform.fillText(lbl, padL - 3, y + 3);
+            });
+
+            if (!data || data.length === 0) return;
+
+            ctxWaveform.lineWidth = 1.5; ctxWaveform.strokeStyle = '#22d3ee';
+            ctxWaveform.beginPath();
+            const sliceWidth = graphW / data.length;
+            let x = padL;
+            for (let i = 0; i < data.length; i++) {
+                const v = data[i] / 128.0 - 1.0;
+                const y = padT + (graphH / 2) - (v * graphH / 2);
+                if (i === 0) ctxWaveform.moveTo(x, y);
+                else ctxWaveform.lineTo(x, y);
+                x += sliceWidth;
+            }
+            ctxWaveform.stroke();
+        }
+
+        function renderFFTSpectrum(data) {
+            const w = canvasFFT.width, h = canvasFFT.height;
+            const padL = 30, padB = 18, padT = 20, padR = 10;
+            const graphW = w - padL - padR, graphH = h - padT - padB;
+
+            ctxFFT.fillStyle = '#030712';
+            ctxFFT.fillRect(0, 0, w, h);
+
+            ctxFFT.fillStyle = '#64748b';
+            ctxFFT.font = '8px monospace';
+            ctxFFT.textAlign = 'right';
+            ['0dB', '-40dB', '-80dB'].forEach((lbl, idx) => {
+                const y = padT + (idx / 2) * graphH;
+                ctxFFT.fillText(lbl, padL - 3, y + 3);
+            });
+
+            ctxFFT.strokeStyle = 'rgba(56, 189, 248, 0.3)';
+            ctxFFT.beginPath();
+            ctxFFT.moveTo(padL, padT); ctxFFT.lineTo(padL, padT + graphH); ctxFFT.lineTo(padL + graphW, padT + graphH);
+            ctxFFT.stroke();
+
+            if (!data || data.length === 0) return;
+
+            const barWidth = Math.max(1, (graphW / data.length) * 2);
+            let x = padL;
+            for (let i = 0; i < data.length; i++) {
+                const barHeight = (data[i] / 255) * graphH;
+                const gradient = ctxFFT.createLinearGradient(0, padT + graphH, 0, padT);
+                gradient.addColorStop(0, '#06b6d4');
+                gradient.addColorStop(0.5, '#a855f7');
+                gradient.addColorStop(1, '#ec4899');
+                ctxFFT.fillStyle = gradient;
+                ctxFFT.fillRect(x, padT + graphH - barHeight, barWidth, barHeight);
+                x += barWidth;
+                if (x >= padL + graphW) break;
+            }
+        }
+
+        function renderPitchHistoryCanvas(currentPitch) {
+            pitchHistoryBuffer.push(currentPitch);
+            pitchHistoryBuffer.shift();
+
+            const w = canvasPitchHistory.width, h = canvasPitchHistory.height;
+            const padL = 35, padB = 18, padT = 18, padR = 10;
+            const graphW = w - padL - padR, graphH = h - padT - padB;
+
+            ctxPitchHistory.fillStyle = '#030712';
+            ctxPitchHistory.fillRect(0, 0, w, h);
+
+            ctxPitchHistory.fillStyle = '#64748b';
+            ctxPitchHistory.font = '8px monospace';
+            ctxPitchHistory.textAlign = 'right';
+            ['1kHz', '500Hz', '0Hz'].forEach((lbl, idx) => {
+                const y = padT + (idx / 2) * graphH;
+                ctxPitchHistory.fillText(lbl, padL - 3, y + 3);
+            });
+
+            ctxPitchHistory.strokeStyle = 'rgba(56, 189, 248, 0.3)';
+            ctxPitchHistory.beginPath();
+            ctxPitchHistory.moveTo(padL, padT); ctxPitchHistory.lineTo(padL, padT + graphH); ctxPitchHistory.lineTo(padL + graphW, padT + graphH);
+            ctxPitchHistory.stroke();
+
+            ctxPitchHistory.strokeStyle = '#10b981';
+            ctxPitchHistory.lineWidth = 1.5;
+            ctxPitchHistory.beginPath();
+
+            const step = graphW / pitchHistoryBuffer.length;
+            for (let i = 0; i < pitchHistoryBuffer.length; i++) {
+                const p = pitchHistoryBuffer[i];
+                const normY = p > 0 ? padT + graphH - (Math.min(1000, p) / 1000) * graphH : padT + graphH;
+                const x = padL + i * step;
+                if (i === 0) ctxPitchHistory.moveTo(x, normY);
+                else ctxPitchHistory.lineTo(x, normY);
+            }
+            ctxPitchHistory.stroke();
+        }
+
+        function renderFourierWhiteboard(data) {
+            const w = canvasWhiteboard.width, h = canvasWhiteboard.height;
+            const padL = 25, padB = 15, padT = 15, padR = 10;
+            const graphW = w - padL - padR, graphH = h - padT - padB;
+
+            ctxWhiteboard.fillStyle = '#030712';
+            ctxWhiteboard.fillRect(0, 0, w, h);
+
+            ctxWhiteboard.strokeStyle = 'rgba(245, 158, 11, 0.3)';
+            ctxWhiteboard.beginPath();
+            ctxWhiteboard.moveTo(padL, padT); ctxWhiteboard.lineTo(padL, padT + graphH); ctxWhiteboard.lineTo(padL + graphW, padT + graphH);
+            ctxWhiteboard.stroke();
+
+            if (!data || data.length === 0) return;
+
+            ctxWhiteboard.strokeStyle = '#f59e0b';
+            ctxWhiteboard.lineWidth = 1.5;
+            ctxWhiteboard.beginPath();
+
+            const step = Math.floor(data.length / graphW);
+            for (let x = 0; x < graphW; x++) {
+                const idx = x * step;
+                const val = data[idx] / 255;
+                const canvasX = padL + x;
+                const canvasY = padT + graphH - (val * graphH * 0.9);
+                if (x === 0) ctxWhiteboard.moveTo(canvasX, canvasY);
+                else ctxWhiteboard.lineTo(canvasX, canvasY);
+            }
+            ctxWhiteboard.stroke();
+        }
+
+        function updatePitchAndVUMeter(timeData, pitch) {
+            let sumSq = 0;
+            for (let i = 0; i < timeData.length; i++) {
+                const val = (timeData[i] - 128) / 128;
+                sumSq += val * val;
+            }
+            const rms = Math.sqrt(sumSq / timeData.length);
+            const db = 20 * Math.log10(rms || 0.0001);
+
+            const vuBar = document.getElementById('vu-bar');
+            const vuText = document.getElementById('vu-db-text');
+            const pct = Math.min(100, Math.max(0, (db + 60) * 1.66));
+            vuBar.style.width = `${pct}%`;
+            vuText.textContent = `${Math.round(db)} dB`;
+
+            if (pitch > 0 && rms > 0.02) {
+                document.getElementById('tuner-freq').textContent = `${pitch} Hz`;
+                document.getElementById('tuner-note').textContent = getNoteFromFreq(pitch);
+            } else {
+                document.getElementById('tuner-freq').textContent = '0.0 Hz';
+                document.getElementById('tuner-note').textContent = '--';
+            }
+        }
+
+        function toggleRegisterModal(show) {
+            const modal = document.getElementById('modal-register');
+            modal.classList.toggle('hidden', !show);
+            if (!show) resetRegistrationModalState();
+        }
+
+        function resetRegistrationModalState() {
+            document.getElementById('input-username').value = '';
+            document.getElementById('rec-status-text').textContent = 'LISTO PARA GRABAR';
+            document.getElementById('rec-progress-circle').style.strokeDashoffset = '213.6';
+            document.getElementById('btn-save-profile').disabled = true;
+            document.getElementById('rec-audio-preview').classList.add('hidden');
+            currentRecordedBlob = null;
+            currentRecordedVector = null;
+        }
+
+        async function startVoiceRegistrationRecording() {
+            if (!isAudioEngineRunning) await toggleAudioEngine();
+
+            recordedAudioChunks = [];
+            const durationMs = 3000;
+            const startTime = Date.now();
+
+            const mediaRecorder = new MediaRecorder(micStream);
+            const statusTxt = document.getElementById('rec-status-text');
+            const progressCircle = document.getElementById('rec-progress-circle');
+            const btnRecord = document.getElementById('btn-start-record');
+
+            btnRecord.disabled = true;
+            statusTxt.textContent = 'GRABANDO MUESTRA... HABLE AHORA';
+            statusTxt.className = 'text-xs font-semibold text-pink-400 animate-pulse';
+
+            const accumulatedVectors = [];
+            const sampleInterval = setInterval(() => {
+                if (analyserNode) {
+                    const freqData = new Uint8Array(analyserNode.frequencyBinCount);
+                    const timeData = new Uint8Array(analyserNode.frequencyBinCount);
+                    analyserNode.getByteFrequencyData(freqData);
+                    analyserNode.getByteTimeDomainData(timeData);
+                    accumulatedVectors.push(extractSpectralVector(freqData, timeData, audioCtx.sampleRate));
+                }
+            }, 100);
+
+            mediaRecorder.ondataavailable = (e) => {
+                if (e.data.size > 0) recordedAudioChunks.push(e.data);
+            };
+
+            mediaRecorder.onstop = () => {
+                clearInterval(sampleInterval);
+                currentRecordedBlob = new Blob(recordedAudioChunks, { type: 'audio/webm' });
+                currentRecordedVector = averageSpectralVectors(accumulatedVectors);
+
+                const audioURL = URL.createObjectURL(currentRecordedBlob);
+                const audioElem = document.getElementById('rec-audio-preview');
+                audioElem.src = audioURL;
+                audioElem.classList.remove('hidden');
+
+                statusTxt.textContent = 'MUESTRA GRABADA CON ÉXITO';
+                statusTxt.className = 'text-xs font-semibold text-emerald-400';
+                document.getElementById('btn-save-profile').disabled = false;
+                btnRecord.disabled = false;
+            };
+
+            mediaRecorder.start();
+
+            const animInterval = setInterval(() => {
+                const elapsed = Date.now() - startTime;
+                const pct = Math.min(1, elapsed / durationMs);
+                progressCircle.style.strokeDashoffset = 213.6 * (1 - pct);
+                if (elapsed >= durationMs) {
+                    clearInterval(animInterval);
+                    mediaRecorder.stop();
+                }
+            }, 50);
+        }
+
+        function averageSpectralVectors(vectors) {
+            if (!vectors || vectors.length === 0) return null;
+            let sumCentroid = 0, sumPitch = 0, sumRolloff = 0, sumFlatness = 0;
+            const sumFormants = new Array(8).fill(0);
+            let lastFFTRaw = [];
+
+            vectors.forEach(v => {
+                sumCentroid += v.centroid;
+                sumPitch += (v.pitch || 0);
+                sumRolloff += (v.rolloff || 0);
+                sumFlatness += v.flatness;
+                v.formants.forEach((f, idx) => sumFormants[idx] += f);
+                if (v.fftRaw && v.fftRaw.length > 0) lastFFTRaw = v.fftRaw;
+            });
+
+            const len = vectors.length;
+            return {
+                centroid: Math.round(sumCentroid / len),
+                pitch: Math.round(sumPitch / len),
+                rolloff: Math.round(sumRolloff / len),
+                flatness: parseFloat((sumFlatness / len).toFixed(4)),
+                formants: sumFormants.map(f => f / len),
+                fftRaw: lastFFTRaw
+            };
+        }
+
+        async function saveVoiceProfile() {
+            const username = document.getElementById('input-username').value.trim();
+            if (!username) return alert('Ingrese un nombre de usuario.');
+            if (!currentRecordedBlob || !currentRecordedVector) return alert('Muestra de audio no válida.');
+
+            const profile = {
+                id: 'usr_' + Date.now(),
+                name: username,
+                date: new Date().toLocaleDateString('es-ES', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }),
+                vector: currentRecordedVector,
+                audioBlob: currentRecordedBlob
+            };
+
+            await saveProfileToDB(profile);
+            toggleRegisterModal(false);
+            loadRegisteredUsers();
+        }
+
+        async function loadRegisteredUsers() {
+            const users = await getAllProfilesFromDB();
+            const container = document.getElementById('users-list');
+            const badge = document.getElementById('user-count-badge');
+            const selectTarget = document.getElementById('select-target-profile');
+
+            badge.textContent = `${users.length} Perfiles`;
+
+            selectTarget.innerHTML = '<option value="">-- Seleccionar Perfil Guardado --</option>';
+            users.forEach(u => {
+                selectTarget.innerHTML += `<option value="${u.id}">${escapeHtml(u.name)}</option>`;
+            });
+
+            if (users.length > 0 && !targetUserProfile) {
+                selectTarget.value = users[0].id;
+                changeTargetProfile(users[0].id);
+            }
+
+            if (users.length === 0) {
+                container.innerHTML = `<div class="text-center py-8 text-slate-500 text-xs italic">No hay perfiles registrados en IndexedDB.</div>`;
+                return;
+            }
+
+            container.innerHTML = '';
+            users.forEach(u => {
+                const audioURL = URL.createObjectURL(u.audioBlob);
+                const card = document.createElement('div');
+                card.className = 'p-2.5 rounded-lg bg-slate-950 border border-slate-800 flex flex-col gap-1.5 hover:border-slate-700 transition';
+                card.innerHTML = `
+                    <div class="flex justify-between items-center">
+                        <div class="flex items-center gap-2">
+                            <i class="fa-solid fa-user-shield text-cyan-400 text-xs"></i>
+                            <span class="text-xs font-bold text-slate-200">${escapeHtml(u.name)}</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="text-[9px] text-slate-500">${u.date}</span>
+                            <button onclick="deleteProfileFromDB('${u.id}')" class="text-slate-500 hover:text-red-400 text-xs px-1">
+                                <i class="fa-solid fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="text-[9px] text-slate-400 font-mono flex justify-between">
+                        <span>Centroide: ${u.vector.centroid}Hz</span>
+                        <span>Tono (f₀): ${u.vector.pitch || 0}Hz</span>
+                    </div>
+                    <audio src="${audioURL}" controls class="w-full h-6 mt-0.5 rounded bg-slate-900"></audio>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        function escapeHtml(str) {
+            return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+        }
+
+        function autoCorrelatePitch(buffer, sampleRate) {
+            const SIZE = buffer.length;
+            let r1 = 0, r2 = SIZE - 1, thres = 0.2;
+            for (let i = 0; i < SIZE / 2; i++) {
+                if (Math.abs(buffer[i] - 128) < thres * 128) { r1 = i; break; }
+            }
+            for (let i = 1; i < SIZE / 2; i++) {
+                if (Math.abs(buffer[SIZE - i] - 128) < thres * 128) { r2 = SIZE - i; break; }
+            }
+            buffer = buffer.slice(r1, r2);
+            const c = new Array(buffer.length).fill(0);
+            for (let i = 0; i < buffer.length; i++) {
+                for (let j = 0; j < buffer.length - i; j++) {
+                    c[i] = c[i] + ((buffer[j] - 128) / 128) * ((buffer[j + i] - 128) / 128);
+                }
+            }
+            let d = 0;
+            while (c[d] > c[d + 1]) d++;
+            let maxval = -1, maxpos = -1;
+            for (let i = d; i < buffer.length; i++) {
+                if (c[i] > maxval) { maxval = c[i]; maxpos = i; }
+            }
+            let T0 = maxpos;
+            return T0 ? sampleRate / T0 : -1;
+        }
+
+        function getNoteFromFreq(freq) {
+            const notes = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+            const midi = Math.round(69 + 12 * Math.log2(freq / 440));
+            const noteIndex = (midi % 12 + 12) % 12;
+            return notes[noteIndex] || '--';
+        }
+
+        function initCanvases() {
+            canvasWaveform = document.getElementById('canvas-waveform');
+            ctxWaveform = canvasWaveform.getContext('2d');
+            canvasFFT = document.getElementById('canvas-fft');
+            ctxFFT = canvasFFT.getContext('2d');
+            canvasPitchHistory = document.getElementById('canvas-pitch-history');
+            ctxPitchHistory = canvasPitchHistory.getContext('2d');
+            canvasWhiteboard = document.getElementById('canvas-whiteboard');
+            ctxWhiteboard = canvasWhiteboard.getContext('2d');
+            canvasOverlayLive = document.getElementById('canvas-overlay-live');
+            ctxOverlayLive = canvasOverlayLive.getContext('2d');
+
+            resizeCanvases();
+            window.addEventListener('resize', resizeCanvases);
+        }
+
+        function resizeCanvases() {
+            [canvasWaveform, canvasFFT, canvasPitchHistory, canvasWhiteboard, canvasOverlayLive].forEach(c => {
+                if (c) {
+                    c.width = c.parentElement.clientWidth;
+                    c.height = c.parentElement.clientHeight;
+                }
+            });
+        }
+
+        window.onload = async () => {
+            initCanvases();
+            await initDatabase();
+        };
+    </script>
+</body>
+</html>
